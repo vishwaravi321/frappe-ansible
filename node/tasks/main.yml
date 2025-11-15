@@ -1,0 +1,17 @@
+---
+# tasks file for node
+
+- name: Install nvm
+  become: true
+  become_user: "{{ user_name }}"
+  shell: >
+    curl "{{ nvm_url }}" | bash
+    creates=/home/{{ user_name }}/.nvm/nvm.sh
+
+- name: Install node and set version
+  become: true
+  become_user: "{{ user_name }}"
+  shell: >
+    /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh && nvm install {{ node_version }}"
+    creates=/home/{{ user_name }}/.nvm/alias
+    

@@ -1,0 +1,45 @@
+# all.yml
+---
+
+# varsfor mariadb
+db_password: dialbox
+docker_image: mariadb:10.8.8-jammy
+
+# vars for node
+nvm_url: https://raw.githubusercontent.com/creationix/nvm/master/install.sh
+node_version: 18
+
+# vars for user
+user_name: nxweb
+hashed_password: $6$rounds=656000$.mpWIbQiIiKgo9H8$9dtwakYrlKV5x//uEUkOwd3/lY5nwd7bYMnvtQp/VKkjAM4PJ5hxvqw8hUTGZIG/kwGrijPIWakylbvGu31BN0 
+
+# vars for timezone
+time_zone: Asia/Kolkata
+
+# vars for apt
+apt_packages:
+  - vim
+  - nano
+  - git
+  - python3-dev
+  - python3-setuptools
+  - python3-pip
+  - virtualenv
+  - python3-venv
+  - software-properties-common
+  - redis-server
+  - xvfb
+  - libfontconfig
+  - wkhtmltopdf
+  - curl
+  - supervisor
+  - fail2ban
+  - redis-server
+  - nginx
+  - lolcat
+  - file
+  - pipx
+  - libmysqlclient-dev
+  - docker.io
+  - mariadb-client
+  - tree

@@ -1,0 +1,31 @@
+---
+# tasks file for mariadb
+
+- name: Install Docker,MariaDB Client and libmysqlclient-dev
+  ansible.builtin.apt:
+    name:
+      - libmysqlclient-dev
+      - docker.io
+      - mariadb-client
+    state: present
+    force_apt_get: true
+- name: Create mysql conf file
+  ansible.builtin.template:
+    src: 50-server.cnf.j2
+    dest: /opt/50-server.cnf
+    mode: "0644"
+- name: Pull Docker image
+  community.docker.docker_image:
+    name: "{{ docker_image }}"
+    source: pull
+- name: Start Docker container with environment variables
+  community.docker.docker_container:
+    name: mariadb
+    image: "{{ docker_image }}"
+    state: started
+    ports:
+      - 3306:3306
+    env: MARIADB_ROOT_PASSWORD="{{ db_password }}"
+    volumes:
+      - /opt/50-server.cnf:/etc/mysql/mariadb.conf.d/50-server.cnf
+    restart_policy: unless-stopped

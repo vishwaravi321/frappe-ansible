@@ -1,0 +1,17 @@
+---
+# tasks file for user
+
+- name: Create a new user
+  ansible.builtin.user:
+    name: "{{ user_name }}"
+    password: "{{ hashed_password }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+- name: Add user to sudo and docker group
+  ansible.builtin.user:
+    name: "{{ user_name }}"
+    groups:
+      - sudo
+      - docker
+    append: true

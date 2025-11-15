@@ -1,0 +1,26 @@
+---
+# tasks file for frappe
+
+- name: Create Script to install Frappe Bench
+  become: true
+  become_user: "{{ user_name }}"
+  template:
+    src: install.sh.j2
+    dest: /home/{{ user_name }}/install.sh
+    mode: "0755"
+
+- name: Install yarn
+  become: true
+  become_user: "{{ user_name }}"
+  community.general.npm:
+    name:
+      - yarn
+    global: true
+    state: present
+
+- name: Install frappe-bench using pipx
+  become: true
+  become_user: "{{ user_name }}"
+  name: frappe-bench
+  state: present
+  global: true

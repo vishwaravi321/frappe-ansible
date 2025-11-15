@@ -1,0 +1,5 @@
+---
+# tasks file for timezone
+
+- name: Change timezone to the desired value
+  command: timedatectl set-timezone "{{ time_zone }}"
