@@ -7,17 +7,31 @@ docker_image: mariadb:10.8.8-jammy
 
 # vars for node
 nvm_url: https://raw.githubusercontent.com/creationix/nvm/master/install.sh
-node_version: 18
+node_version: 18.20.8
 
 # vars for user
-user_name: nxweb
+user_name: frappe
 hashed_password: $6$rounds=656000$.mpWIbQiIiKgo9H8$9dtwakYrlKV5x//uEUkOwd3/lY5nwd7bYMnvtQp/VKkjAM4PJ5hxvqw8hUTGZIG/kwGrijPIWakylbvGu31BN0 
 
 # vars for timezone
 time_zone: Asia/Kolkata
 
+
+# vars for frappe
+
+frappe_bech_name: frappe-bench
+frappe_version: version-15
+site_name: site.local
+apps:
+  - { app_name: "erpnext", app_branch: "version-15" }
+  - { app_name: "hrms", app_branch: "vwrsion-15" }
+
+
 # vars for apt
 apt_packages:
+  - inetutils-ping
+  - wget
+  - htop
   - vim
   - nano
   - git

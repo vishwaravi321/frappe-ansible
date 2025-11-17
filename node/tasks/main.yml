@@ -8,10 +8,13 @@
     curl "{{ nvm_url }}" | bash
     creates=/home/{{ user_name }}/.nvm/nvm.sh
 
-- name: Install node and set version
+- name: Install node and yarn
   become: true
   become_user: "{{ user_name }}"
   shell: >
-    /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh && nvm install {{ node_version }}"
-    creates=/home/{{ user_name }}/.nvm/alias
+    /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh
+    && nvm install {{ node_version }}
+    && nvm use {{ node_version }}
+    && npm install -g yarn"
+
     

@@ -9,18 +9,51 @@
     dest: /home/{{ user_name }}/install.sh
     mode: "0755"
 
-- name: Install yarn
-  become: true
-  become_user: "{{ user_name }}"
-  community.general.npm:
-    name:
-      - yarn
-    global: true
-    state: present
+# - name: Install yarn
+#   community.general.npm:
+#     executable: /home/{{ user_name }}/.nvm/versions/node/v{{ node_version }}/lib/node_modules/npm
+#     path: /home/{{ user_name }}/
+#     name:
+#       - yarn
+#     global: true
+#     state: present
 
-- name: Install frappe-bench using pipx
+- name: Install frappe-bench
   become: true
   become_user: "{{ user_name }}"
-  name: frappe-bench
-  state: present
-  global: true
+  shell: >
+    pipx install frappe-bench
+
+- name: Init bench
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.command:
+    cmd: /home/{{ user_name }}/.local/bin/bench init {{ frappe_bech_name }}
+    chdir: /home/{{ user_name }}/
+    creates: /home/{{ user_name }}/{{ frappe_bech_name }}
+
+- name: Install apps in bench
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.command:
+    cmd: bench get-app {{ app_namename }} --branch {{ app_branch }}
+    chdir: /home/{{ user_name }}/{{ frappe_bech_name }}
+    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/apps/{{ app_name }}
+  loop: "{{ apps }}"
+
+
+- name: Create Site
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.command:
+    cmd: bench new-site {{ site_name }}
+    chdir: /home/{{ user_name }}/{{ frappe_bech_name }}/
+    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ site_name }}
+
+- name: Install apps in site
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.command:
+    cmd: bench --site {{ site_name }} install-app {{ app_name }} && bench --site {{ site_name }} migrate
+    chdir: /home/{{ user_name }}/{{ frappe_bech_name }}
+  loop: apps

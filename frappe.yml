@@ -2,7 +2,7 @@
 ---
 # This Playbook would install deps, deploy mariadb for frappe
 - name: Install dependencies and deploy MariaDB for Frappe
-  hosts: guna
+  hosts: k8s
   roles:
    - role: timezone
    - role: apt
