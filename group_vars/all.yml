@@ -2,7 +2,7 @@
 ---
 
 # varsfor mariadb
-db_password: dialbox
+db_root_password: dialbox
 docker_image: mariadb:10.8.8-jammy
 
 # vars for node
@@ -21,10 +21,15 @@ time_zone: Asia/Kolkata
 
 frappe_bech_name: frappe-bench
 frappe_version: version-15
-site_name: site.local
+sites: 
+  - site_name: site.local
+    admin_password: admin
+
 apps:
-  - { app_name: "erpnext", app_branch: "version-15" }
-  - { app_name: "hrms", app_branch: "vwrsion-15" }
+  - app_name: erpnext
+    app_branch: version-15
+  - app_name: hrms
+    app_branch: version-15
 
 
 # vars for apt

@@ -25,7 +25,7 @@
     state: started
     ports:
       - 3306:3306
-    env: MARIADB_ROOT_PASSWORD="{{ db_password }}"
+    env: MARIADB_ROOT_PASSWORD="{{ db_root_password }}"
     volumes:
       - /opt/50-server.cnf:/etc/mysql/mariadb.conf.d/50-server.cnf
     restart_policy: unless-stopped
