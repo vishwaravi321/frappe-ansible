@@ -21,39 +21,52 @@
 - name: Install frappe-bench
   become: true
   become_user: "{{ user_name }}"
-  shell: >
-    pipx install frappe-bench
+  ansible.builtin.command:
+    cmd: pip install frappe-bench
+    chdir: /home/{{ user_name }}
 
 - name: Init bench
   become: true
   become_user: "{{ user_name }}"
   ansible.builtin.command:
-    cmd: /home/{{ user_name }}/.local/bin/bench init {{ frappe_bech_name }}
+    cmd: /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh" && /home/{{ user_name }}/.local/bin/bench init {{ frappe_bech_name }} --frappe-branch {{ frappe_version }}
     chdir: /home/{{ user_name }}/
     creates: /home/{{ user_name }}/{{ frappe_bech_name }}
+  timeout: 600
+
 
 - name: Install apps in bench
   become: true
   become_user: "{{ user_name }}"
   ansible.builtin.command:
-    cmd: bench get-app {{ app_namename }} --branch {{ app_branch }}
+    cmd: /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh" && /home/{{ user_name }}/.local/bin/bench get-app {{ item.app_name }} --branch {{ item.app_branch }}
     chdir: /home/{{ user_name }}/{{ frappe_bech_name }}
-    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/apps/{{ app_name }}
+    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/apps/{{ item.app_name }}
   loop: "{{ apps }}"
+
+
+- name: Add apps to apps.txt
+  become: true
+  become_user: "{{ user_name }}"
+  shell: |
+    ls -1 /home/{{ user_name }}/{{ frappe_bech_name }}/apps > /home/{{ user_name }}/{{ frappe_bech_name }}/sites/apps.txt
+  tags: add_apps
 
 
 - name: Create Site
   become: true
   become_user: "{{ user_name }}"
   ansible.builtin.command:
-    cmd: bench new-site {{ site_name }}
+    cmd: /home/{{ user_name }}/.local/bin/bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} ----mariadb-root-password {{ db_root_password }}
     chdir: /home/{{ user_name }}/{{ frappe_bech_name }}/
-    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ site_name }}
+    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ item.site_name }}
+  loop: "{{ sites }}"
+  tags: create_site
 
 - name: Install apps in site
   become: true
   become_user: "{{ user_name }}"
   ansible.builtin.command:
-    cmd: bench --site {{ site_name }} install-app {{ app_name }} && bench --site {{ site_name }} migrate
+    cmd: /home/{{ user_name }}/.local/bin/bench --site {{ site_name }} install-app {{ app_name }} && bench --site {{ site_name }} migrate
     chdir: /home/{{ user_name }}/{{ frappe_bech_name }}
-  loop: apps
+  loop: "{{ apps }}"
