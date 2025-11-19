@@ -5,4 +5,5 @@
     src: restart.conf.j2
     dest: /etc/supervisor/conf.d/restart.conf
     mode: "0644"
+  notify: restart supervisor
   tags: supervisor

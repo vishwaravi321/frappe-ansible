@@ -1,0 +1,5 @@
+- name: restart supervisor
+  become: true
+  ansible.builtin.systemd:
+    name: supervisor
+    state: restarted
