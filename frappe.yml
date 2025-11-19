@@ -1,4 +1,4 @@
-# local.yml
+# frappe.yml
 ---
 # This Playbook would install deps, deploy mariadb for frappe
 - name: Install dependencies and deploy MariaDB for Frappe
@@ -9,5 +9,5 @@
    - role: mariadb
    - role: user
    - role: node
-   - role: frappe
    - role: supervisor
+   - role: frappe
