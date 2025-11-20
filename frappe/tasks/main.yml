@@ -1,6 +1,15 @@
 ---
 # tasks file for frappe
 
+
+
+- name: Allow frappe user to run supervisorctl without password
+  copy:
+    dest: /etc/sudoers.d/frappe_supervisor
+    content: "frappe ALL=(ALL) NOPASSWD:/usr/bin/supervisorctl"
+    mode: 0440
+
+
 - name: Create Script to install Frappe Bench
   become: true
   become_user: "{{ user_name }}"
@@ -28,21 +37,29 @@
 - name: Init bench
   become: true
   become_user: "{{ user_name }}"
-  ansible.builtin.command:
-    cmd: /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh" && /home/{{ user_name }}/.local/bin/bench init {{ frappe_bech_name }} --frappe-branch {{ frappe_version }}
-    chdir: /home/{{ user_name }}/
-    creates: /home/{{ user_name }}/{{ frappe_bech_name }}
-  timeout: 600
+  environment:
+    PATH: "/home/{{ user_name }}/.local/bin:/home/{{ user_name }}/.nvm/versions/node/v{{ node_version }}/bin:{{ ansible_env.PATH }}"
+  shell: |
+    /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh && \
+    bench init {{ frappe_bech_name }} --frappe-branch {{ frappe_version }}"
+  args:
+    chdir: "/home/{{ user_name }}/"
+  async: 1800
+  poll: 10
+
 
 
 - name: Install apps in bench
   become: true
   become_user: "{{ user_name }}"
-  ansible.builtin.command:
-    cmd: /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh" && /home/{{ user_name }}/.local/bin/bench get-app {{ item.app_name }} --branch {{ item.app_branch }}
-    chdir: /home/{{ user_name }}/{{ frappe_bech_name }}
-    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/apps/{{ item.app_name }}
+  environment:
+    PATH: "/home/{{ user_name }}/.local/bin:/home/{{ user_name }}/.nvm/versions/node/v{{ node_version }}/bin:{{ ansible_env.PATH }}"
+  shell: |
+    bench get-app {{ item.app_name }} --branch {{ item.app_branch }}
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
   loop: "{{ apps }}"
+  tags: get_apps
 
 
 - name: Add apps to apps.txt
@@ -57,7 +74,7 @@
   become: true
   become_user: "{{ user_name }}"
   ansible.builtin.command:
-    cmd: /home/{{ user_name }}/.local/bin/bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} ----mariadb-root-password {{ db_root_password }}
+    cmd: /home/{{ user_name }}/.local/bin/bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} --mariadb-root-password {{ db_root_password }}
     chdir: /home/{{ user_name }}/{{ frappe_bech_name }}/
     creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ item.site_name }}
   loop: "{{ sites }}"
@@ -66,7 +83,12 @@
 - name: Install apps in site
   become: true
   become_user: "{{ user_name }}"
-  ansible.builtin.command:
-    cmd: /home/{{ user_name }}/.local/bin/bench --site {{ site_name }} install-app {{ app_name }} && bench --site {{ site_name }} migrate
-    chdir: /home/{{ user_name }}/{{ frappe_bech_name }}
-  loop: "{{ apps }}"
+  environment:
+    PATH: "/home/{{ user_name }}/.local/bin:{{ ansible_env.PATH }}"
+  shell: |
+    bench --site {{ item.site_name }} install-app {{ item.apps }} && \
+    bench --site {{ item.site_name }} migrate
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
+  loop: "{{ sites }}"
+  tags: apps_in_sites
