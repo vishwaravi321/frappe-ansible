@@ -24,10 +24,13 @@ frappe_version: version-15
 sites: 
   - site_name: site.local
     admin_password: admin
-    apps: "erpnext hrms"
+    apps: 
+      - erpnext
+      - hrms
   - site_name: site2.local
     admin_password: admin2
-    apps: erpnext
+    apps: 
+      - erpnext
 
 apps:
   - app_name: erpnext

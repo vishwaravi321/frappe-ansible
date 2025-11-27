@@ -10,14 +10,6 @@
     mode: 0440
 
 
-- name: Create Script to install Frappe Bench
-  become: true
-  become_user: "{{ user_name }}"
-  template:
-    src: install.sh.j2
-    dest: /home/{{ user_name }}/install.sh
-    mode: "0755"
-
 # - name: Install yarn
 #   community.general.npm:
 #     executable: /home/{{ user_name }}/.nvm/versions/node/v{{ node_version }}/lib/node_modules/npm
@@ -28,8 +20,6 @@
 #     state: present
 
 - name: Install frappe-bench
-  become: true
-  become_user: "{{ user_name }}"
   ansible.builtin.command:
     cmd: pip install frappe-bench
     chdir: /home/{{ user_name }}
@@ -60,6 +50,8 @@
     chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
   loop: "{{ apps }}"
   tags: get_apps
+  async: 1800
+  poll: 10
 
 
 - name: Add apps to apps.txt
@@ -68,17 +60,36 @@
   shell: |
     ls -1 /home/{{ user_name }}/{{ frappe_bech_name }}/apps > /home/{{ user_name }}/{{ frappe_bech_name }}/sites/apps.txt
   tags: add_apps
+  async: 1800
+  poll: 10
 
 
 - name: Create Site
   become: true
   become_user: "{{ user_name }}"
   ansible.builtin.command:
-    cmd: /home/{{ user_name }}/.local/bin/bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} --mariadb-root-password {{ db_root_password }}
+    cmd: bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} --mariadb-root-password {{ db_root_password }}
     chdir: /home/{{ user_name }}/{{ frappe_bech_name }}/
     creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ item.site_name }}
   loop: "{{ sites }}"
   tags: create_site
+  async: 1800
+  poll: 10
+
+- name: Set Production
+  shell: |
+    bench setup production {{ user_name }} --yes
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
+  tags: setup_production
+  async: 1800
+  poll: 10
+
+
+
+
+
+
 
 - name: Install apps in site
   become: true
@@ -86,9 +97,12 @@
   environment:
     PATH: "/home/{{ user_name }}/.local/bin:{{ ansible_env.PATH }}"
   shell: |
-    bench --site {{ item.site_name }} install-app {{ item.apps }} && \
-    bench --site {{ item.site_name }} migrate
+    bench --site {{ item.0.site_name }} install-app {{ item.1 }} && \
+    bench --site {{ item.0.site_name }} migrate
   args:
     chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
-  loop: "{{ sites }}"
+  loop: "{{ sites | subelements('apps') }}"
   tags: apps_in_sites
+  async: 1800
+  poll: 10
+
