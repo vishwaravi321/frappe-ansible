@@ -1,4 +1,4 @@
-- name: restart supervisor
+- name: Restart supervisor
   become: true
   ansible.builtin.systemd:
     name: supervisor

@@ -1,68 +1,57 @@
 ---
 # tasks file for frappe
 
-
-
 - name: Allow frappe user to run supervisorctl without password
-  copy:
+  ansible.builtin.copy:
     dest: /etc/sudoers.d/frappe_supervisor
     content: "frappe ALL=(ALL) NOPASSWD:/usr/bin/supervisorctl"
-    mode: 0440
-
-
-# - name: Install yarn
-#   community.general.npm:
-#     executable: /home/{{ user_name }}/.nvm/versions/node/v{{ node_version }}/lib/node_modules/npm
-#     path: /home/{{ user_name }}/
-#     name:
-#       - yarn
-#     global: true
-#     state: present
+    mode: "0440"
 
 - name: Install frappe-bench
   ansible.builtin.command:
-    cmd: pip install frappe-bench
+    cmd: pip install frappe-bench --break-system-packages
     chdir: /home/{{ user_name }}
+  changed_when: false
+  tags: install_bench_cli
 
 - name: Init bench
   become: true
   become_user: "{{ user_name }}"
   environment:
     PATH: "/home/{{ user_name }}/.local/bin:/home/{{ user_name }}/.nvm/versions/node/v{{ node_version }}/bin:{{ ansible_env.PATH }}"
-  shell: |
+  ansible.builtin.shell: |
     /bin/bash -c "source /home/{{ user_name }}/.nvm/nvm.sh && \
     bench init {{ frappe_bech_name }} --frappe-branch {{ frappe_version }}"
+  changed_when: false
   args:
     chdir: "/home/{{ user_name }}/"
-  async: 1800
-  poll: 10
-
-
+  async: 600
+  poll: 20
 
 - name: Install apps in bench
   become: true
   become_user: "{{ user_name }}"
   environment:
     PATH: "/home/{{ user_name }}/.local/bin:/home/{{ user_name }}/.nvm/versions/node/v{{ node_version }}/bin:{{ ansible_env.PATH }}"
-  shell: |
+  ansible.builtin.shell: |
     bench get-app {{ item.app_name }} --branch {{ item.app_branch }}
+  changed_when: false
   args:
     chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
   loop: "{{ apps }}"
   tags: get_apps
-  async: 1800
-  poll: 10
-
+  async: 600
+  poll: 20
 
 - name: Add apps to apps.txt
   become: true
   become_user: "{{ user_name }}"
-  shell: |
+  ansible.builtin.shell: |
     ls -1 /home/{{ user_name }}/{{ frappe_bech_name }}/apps > /home/{{ user_name }}/{{ frappe_bech_name }}/sites/apps.txt
+  changed_when: false
   tags: add_apps
-  async: 1800
-  poll: 10
-
+  async: 600
+  poll: 20
 
 - name: Create Site
   become: true
@@ -71,38 +60,79 @@
     cmd: bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} --mariadb-root-password {{ db_root_password }}
     chdir: /home/{{ user_name }}/{{ frappe_bech_name }}/
     creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ item.site_name }}
+  changed_when: false
   loop: "{{ sites }}"
   tags: create_site
-  async: 1800
-  poll: 10
+  async: 600
+  poll: 20
 
-- name: Set Production
-  shell: |
+- name: Setup redis
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.shell: |
+    bench setup redis
+  changed_when: false
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
+  async: 600
+  poll: 20
+  tags: setup_redis
+
+- name: Setup supervisor
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.shell: |
+    bench setup supervisor --yes
+  changed_when: false
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
+  async: 600
+  poll: 20
+  tags: setup_supervisor
+
+- name: Setup nginx
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.shell: |
+    bench setup nginx --yes --log_format ""
+  changed_when: false
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
+  async: 600
+  poll: 20
+  tags: setup_nginx
+
+- name: Setup Production
+  ansible.builtin.shell: |
     bench setup production {{ user_name }} --yes
+  changed_when: false
   args:
     chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
   tags: setup_production
-  async: 1800
-  poll: 10
-
-
-
-
-
-
+  async: 600
+  poll: 20
 
 - name: Install apps in site
   become: true
   become_user: "{{ user_name }}"
   environment:
     PATH: "/home/{{ user_name }}/.local/bin:{{ ansible_env.PATH }}"
-  shell: |
+  ansible.builtin.shell: |
     bench --site {{ item.0.site_name }} install-app {{ item.1 }} && \
     bench --site {{ item.0.site_name }} migrate
+  changed_when: false
   args:
     chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
   loop: "{{ sites | subelements('apps') }}"
   tags: apps_in_sites
-  async: 1800
-  poll: 10
+  async: 600
+  poll: 20
 
+- name: Change bench directory's ownership and mode
+  ansible.builtin.file:
+    path: /home/{{ user_name }}/
+    state: directory
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
+    mode: '0755'
+  tags: change_permissions

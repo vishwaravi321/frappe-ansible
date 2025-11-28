@@ -1,9 +1,8 @@
 - name: Ensure supervisor is running
-  systemd:
+  ansible.builtin.systemd:
     name: supervisor
     state: started
     enabled: true
-
 
 - name: Create Supervisor config for bench restart
   ansible.builtin.template:

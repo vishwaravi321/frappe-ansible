@@ -9,15 +9,22 @@
       - mariadb-client
     state: present
     force_apt_get: true
+
 - name: Create mysql conf file
   ansible.builtin.template:
     src: 50-server.cnf.j2
     dest: /opt/50-server.cnf
     mode: "0644"
+
 - name: Pull Docker image
   community.docker.docker_image:
     name: "{{ docker_image }}"
     source: pull
+
+- name: Create Volume for MariaDB Docker
+  community.docker.docker_volume:
+    name: mariadb_data
+
 - name: Start Docker container with environment variables
   community.docker.docker_container:
     name: mariadb
@@ -27,5 +34,6 @@
       - 3306:3306
     env: MARIADB_ROOT_PASSWORD="{{ db_root_password }}"
     volumes:
+      - mariadb_data:/var/lib/mysql
       - /opt/50-server.cnf:/etc/mysql/mariadb.conf.d/50-server.cnf
     restart_policy: unless-stopped
