@@ -1,0 +1,8 @@
+all:
+  children:
+    erpnext:
+      hosts:
+        production:
+          ansible_user: root
+          ansible_ssh_private_key_file: ~/.ssh/keys/ansible
+          ansible_host: 192.168.1.10

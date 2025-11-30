@@ -1,19 +1,4 @@
----
-# tasks file for frappe
-
-- name: Allow frappe user to run supervisorctl without password
-  ansible.builtin.copy:
-    dest: /etc/sudoers.d/frappe_supervisor
-    content: "frappe ALL=(ALL) NOPASSWD:/usr/bin/supervisorctl"
-    mode: "0440"
-
-- name: Install frappe-bench
-  ansible.builtin.command:
-    cmd: pip install frappe-bench --break-system-packages
-    chdir: /home/{{ user_name }}
-  changed_when: false
-  tags: install_bench_cli
-
+# tasks file for project
 - name: Init bench
   become: true
   become_user: "{{ user_name }}"
@@ -50,19 +35,6 @@
     ls -1 /home/{{ user_name }}/{{ frappe_bech_name }}/apps > /home/{{ user_name }}/{{ frappe_bech_name }}/sites/apps.txt
   changed_when: false
   tags: add_apps
-  async: 600
-  poll: 20
-
-- name: Create Site
-  become: true
-  become_user: "{{ user_name }}"
-  ansible.builtin.command:
-    cmd: bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} --mariadb-root-password {{ db_root_password }}
-    chdir: /home/{{ user_name }}/{{ frappe_bech_name }}/
-    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ item.site_name }}
-  changed_when: false
-  loop: "{{ sites }}"
-  tags: create_site
   async: 600
   poll: 20
 
@@ -109,22 +81,6 @@
   args:
     chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
   tags: setup_production
-  async: 600
-  poll: 20
-
-- name: Install apps in site
-  become: true
-  become_user: "{{ user_name }}"
-  environment:
-    PATH: "/home/{{ user_name }}/.local/bin:{{ ansible_env.PATH }}"
-  ansible.builtin.shell: |
-    bench --site {{ item.0.site_name }} install-app {{ item.1 }} && \
-    bench --site {{ item.0.site_name }} migrate
-  changed_when: false
-  args:
-    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
-  loop: "{{ sites | subelements('apps') }}"
-  tags: apps_in_sites
   async: 600
   poll: 20
 

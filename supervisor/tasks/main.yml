@@ -9,5 +9,12 @@
     src: restart.conf.j2
     dest: /etc/supervisor/conf.d/restart.conf
     mode: "0644"
-  notify: restart supervisor
+  notify: Restart supervisor
   tags: supervisor
+
+
+- name: Allow frappe user to run supervisorctl without password
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/frappe_supervisor
+    content: "frappe ALL=(ALL) NOPASSWD:/usr/bin/supervisorctl"
+    mode: "0440"

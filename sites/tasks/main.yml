@@ -1,0 +1,45 @@
+---
+# tasks file for frappe
+- name: Create Site
+  become: true
+  become_user: "{{ user_name }}"
+  ansible.builtin.command:
+    cmd: bench new-site {{ item.site_name }} --admin-password {{ item.admin_password }} --mariadb-root-password {{ db_root_password }}
+    chdir: /home/{{ user_name }}/{{ frappe_bech_name }}/
+    creates: /home/{{ user_name }}/{{ frappe_bech_name }}/sites/{{ item.site_name }}
+  changed_when: false
+  loop: "{{ sites }}"
+  tags: create_site
+  async: 600
+  poll: 20
+
+- name: Install apps in site
+  become: true
+  become_user: "{{ user_name }}"
+  environment:
+    PATH: "/home/{{ user_name }}/.local/bin:{{ ansible_env.PATH }}"
+  ansible.builtin.shell: |
+    bench --site {{ item.0.site_name }} install-app {{ item.1 }} && \
+    bench --site {{ item.0.site_name }} migrate
+  changed_when: false
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
+  loop: "{{ sites | subelements('apps') }}"
+  tags: apps_in_sites
+  async: 600
+  poll: 20
+
+- name: Enable Scheduler For sites
+  become: true
+  become_user: "{{ user_name }}"
+  environment:
+    PATH: "/home/{{ user_name }}/.local/bin:{{ ansible_env.PATH }}"
+  ansible.builtin.shell: |
+    bench --site {{ item.site_name }} enable-scheduler
+  changed_when: false
+  args:
+    chdir: "/home/{{ user_name }}/{{ frappe_bech_name }}"
+  loop: "{{ sites }}"
+  tags: apps_in_sites
+  async: 600
+  poll: 20

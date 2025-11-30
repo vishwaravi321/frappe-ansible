@@ -1,0 +1,11 @@
+# tasks file for pip
+- name: Install frappe-bench (Ubuntu 22.04 & 24.04 compatible)
+  ansible.builtin.command:
+    cmd: >
+      pip install frappe-bench
+      {% if ansible_distribution_version is version('24.04', '>=') %}
+      --break-system-packages
+      {% endif %}
+    chdir: /home/{{ user_name }}
+  changed_when: false
+  tags: install_bench_cli
